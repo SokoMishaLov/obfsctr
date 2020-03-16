@@ -1,6 +1,4 @@
 use std::fmt::{Display, Formatter, Result};
-use std::fs::File;
-use std::io::Read;
 
 use clap::Clap;
 
