@@ -1,7 +1,5 @@
-[package]
-name = "obfsctr-cli"
-version = "0.1.0"
-authors = ["sokomishalov <sokomishalov@mail.ru>"]
-edition = "2018"
-
-[dependencies]
+[workspace]
+members = [
+        "obfsctr-core",
+        "obfsctr-cli"
+]
