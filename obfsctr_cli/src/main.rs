@@ -1,8 +1,8 @@
 use std::fmt::{Display, Formatter, Result};
+use std::fs::File;
+use std::io::Read;
 
 use clap::Clap;
-
-use obfsctr_core::obfsctr::obfuscate;
 
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "sokomishalov")]
@@ -35,8 +35,4 @@ fn main() {
     let opts: Opts = Opts::parse();
 
     println!("{}", opts);
-
-    let obfuscated = obfuscate(String::from("todo"));
-
-    println!("{}", obfuscated);
 }

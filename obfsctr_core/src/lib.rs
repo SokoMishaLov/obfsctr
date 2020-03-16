@@ -1,6 +1,6 @@
 pub mod obfsctr {
-    pub fn obfuscate(msg: String) -> String {
-        msg
+    pub trait Obfuscator {
+        fn obfuscate(content: &mut String);
     }
 }
 
