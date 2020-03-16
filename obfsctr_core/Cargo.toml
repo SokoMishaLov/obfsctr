@@ -1,5 +1,5 @@
 [package]
-name = "obfsctr-cli"
+name = "obfsctr_core"
 version = "0.1.0"
 authors = ["sokomishalov <sokomishalov@mail.ru>"]
 edition = "2018"

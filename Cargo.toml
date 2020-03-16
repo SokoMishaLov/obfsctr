@@ -1,5 +1,5 @@
 [workspace]
 members = [
-        "obfsctr-core",
-        "obfsctr-cli"
+        "obfsctr_core",
+        "obfsctr_cli"
 ]

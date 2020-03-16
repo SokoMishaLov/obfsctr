@@ -1,0 +1,12 @@
+[package]
+name = "obfsctr_cli"
+version = "0.1.0"
+authors = ["sokomishalov <sokomishalov@mail.ru>"]
+edition = "2018"
+
+[dependencies]
+clap = { git = "https://github.com/clap-rs/clap/" }
+
+[dependencies.obfsctr_core]
+path = "../obfsctr_core"
+version = "0.1.0"
