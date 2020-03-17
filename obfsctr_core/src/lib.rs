@@ -1,4 +1,6 @@
 pub mod obfsctr {
+    use std::fs::File;
+
     use regex::Regex;
 
     pub trait Obfuscator {
@@ -9,7 +11,7 @@ pub mod obfsctr {
         fn obfuscate_by_regexes(&mut self, regexes: Vec<Regex>, replacer: fn(&str) -> str) {
             for r in regexes {
                 r.capture_names().for_each(|it| {
-                    println!("{}", replacer(it.unwrap()))
+                    // println!("{}", replacer(it.unwrap()))
                 })
             }
         }
