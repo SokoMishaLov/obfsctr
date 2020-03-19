@@ -8,7 +8,10 @@ use std::{
 };
 
 use clap::Clap;
-use regex::Regex;
+use regex::{
+    Regex,
+    RegexSet,
+};
 
 use obfsctr_core::obfsctr::Obfuscator;
 
@@ -59,9 +62,10 @@ fn main() {
 
     let files = extract_file_paths(Path::new(&opts.input)).unwrap();
 
+    let regexes = RegexSet::new(&[r"(?:^|\W)and(?:$|\W)"]).unwrap();
+
     for mut file in files {
         println!("Obfuscating {:?}", file);
-        let regexes = vec![Regex::new(r"(?:^|\W)and(?:$|\W)").unwrap()];
 
         file.obfuscate_by_regexes(regexes, replacer)
     }
