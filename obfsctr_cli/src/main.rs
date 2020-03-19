@@ -41,23 +41,23 @@ fn extract_file_paths(input_path: &str) -> io::Result<Vec<PathBuf>> {
     }
 }
 
-fn replacer(raw: &str) -> &str {
-    "kek"
+fn replacer(raw: &str) -> String {
+    raw.to_uppercase()
 }
 
 fn main() {
-    // let opts: Opts = Opts::parse();
+    let opts: Opts = Opts::parse();
 
-    let opts = Opts {
-        input: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
-        regex: r"and|workspace".to_string(),
-        threads: 4,
-    };
+    // let opts = Opts {
+    //     input: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
+    //     regex: r"and".to_string(),
+    //     threads: 4,
+    // };
 
     let file_paths = extract_file_paths(opts.input.as_str()).unwrap();
 
-    for mut file_path in file_paths {
+    for mut path in file_paths {
         let r = Regex::new(opts.regex.as_str()).unwrap();
-        file_path.as_path().obfuscate_by_regex(&r, replacer);
+        path.as_path().obfuscate_by_regex(&r, replacer);
     }
 }
