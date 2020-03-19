@@ -1,18 +1,14 @@
 use std::{
-    fs,
-    fs::File,
     fs::metadata,
     io,
     io::{Error, ErrorKind},
     path::Path,
 };
-use std::net::Shutdown::Read;
+use std::borrow::Borrow;
+use std::ops::Deref;
 
 use clap::Clap;
-use regex::{
-    Regex,
-    RegexSet,
-};
+use regex::Regex;
 
 use obfsctr_core::regex_obfsctr::Obfuscator;
 
@@ -36,43 +32,42 @@ struct Opts {
     threads: u8,
 }
 
-fn extract_file_paths(path: &Path) -> io::Result<Vec<File>> {
+fn extract_file_paths(input_path: &str) -> io::Result<Vec<&Path>> {
+    let path = Path::new(input_path);
     let md = metadata(&path)?;
-    if md.is_dir() {
-        let entries: Vec<File> = fs::read_dir(path)?
-            .map(|res| res.map(|e| File::open(e.path().as_path())).unwrap())
-            .collect::<Result<Vec<_>, io::Error>>()?;
+    Ok(vec![path])
 
-        Ok(entries)
-    } else if md.is_file() {
-        let file = File::open(path)?;
-        Ok(vec![file])
-    } else {
-        Err(Error::new(ErrorKind::NotFound, "File or directory does not exist!"))
-    }
+    // if md.is_dir() {
+    //     let entries: Vec<&Path> = fs::read_dir(path)?
+    //         .map(|res| res.map(|e| e.path().as_path()).unwrap())
+    //         .collect::<Result<Vec<&Path>, io::Error>>()?;
+    //
+    //     Ok(entries)
+    // } else if md.is_file() {
+    //     Ok(vec![path])
+    // } else {
+    //     Err(Error::new(ErrorKind::NotFound, "File or directory does not exist!"))
+    // }
 }
 
-fn replacer(raw: String) -> String {
-    String::from("kek")
+fn replacer(raw: &str) -> &str {
+    "kek"
 }
 
 fn main() {
     // let opts: Opts = Opts::parse();
 
     let opts = Opts {
-        input: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
+        input: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/hamlet.txt".to_string(),
         output: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
-        regex: r"(?:^|\W)and(?:$|\W)".to_string(),
+        regex: r"and".to_string(),
         threads: 4,
     };
 
-    let files = extract_file_paths(Path::new(&opts.input)).unwrap();
+    let file_paths = extract_file_paths(opts.input.as_str()).unwrap();
 
-    for mut file in files {
-        println!("Obfuscating {:?}", file);
-
+    for mut file_path in file_paths {
         let r = Regex::new(opts.regex.as_str()).unwrap();
-
-        file.obfuscate_by_regex(&r, replacer)
+        file_path.obfuscate_by_regex(&r, replacer);
     }
 }

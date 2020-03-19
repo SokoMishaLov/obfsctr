@@ -1,31 +1,50 @@
 use std::{
+    borrow::Borrow,
+    convert::TryInto,
     fs,
     fs::File,
     io::Read,
+    io::Write,
+    ops::Deref,
+    path::Path,
 };
-use std::borrow::Borrow;
-use std::convert::TryInto;
-use std::io::Write;
-use std::ops::Deref;
+use std::borrow::BorrowMut;
+use std::fmt::Debug;
+use std::fs::OpenOptions;
+use std::io::{BufReader, BufWriter};
 
-use regex;
-use regex::Regex;
+use regex::{
+    self,
+    Regex,
+};
 
 pub trait Obfuscator {
-    fn obfuscate_by_regex(&mut self, regex: &Regex, replacer: fn(String) -> String);
+    fn obfuscate_by_regex(&self, regex: &Regex, replacer: fn(&str) -> &str) -> Self;
 }
 
 impl Obfuscator for String {
-    fn obfuscate_by_regex(&mut self, regex: &Regex, replacer: fn(String) -> String) {
-        *self = regex.replace_all(self, "").to_string();
+    fn obfuscate_by_regex(&self, regex: &Regex, replacer: fn(&str) -> &str) -> Self {
+        let obfuscated = regex.replace_all(self, replacer("")).to_string();
+        obfuscated
     }
 }
 
-impl Obfuscator for File {
-    fn obfuscate_by_regex(&mut self, regex: &Regex, replacer: fn(String) -> String) {
+impl Obfuscator for &Path {
+    fn obfuscate_by_regex(&self, regex: &Regex, replacer: fn(&str) -> &str) -> Self {
+        let file_to_read = fs::OpenOptions::new().read(true).open(*self).unwrap();
+        let mut buf_reader = BufReader::new(file_to_read);
         let mut content = String::new();
-        self.read_to_string(&mut content);
-        content.obfuscate_by_regex(regex, replacer);
-        self.write_all(content.as_bytes()).unwrap_or_else(|_| {})
+        buf_reader.read_to_string(&mut content).unwrap();
+
+        let obfuscated = content.obfuscate_by_regex(regex, replacer);
+        println!("{}", obfuscated);
+
+
+        let file_to_write = fs::OpenOptions::new().write(true).open(*self).unwrap();
+        println!("{:?}", file_to_write);
+        let mut buf_writer = BufWriter::new(file_to_write);
+        buf_writer.write_all(obfuscated.as_bytes()).unwrap();
+
+        *self
     }
 }
