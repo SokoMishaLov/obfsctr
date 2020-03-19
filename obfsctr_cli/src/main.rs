@@ -8,6 +8,9 @@ use std::{
 };
 
 use clap::Clap;
+use regex::Regex;
+
+use obfsctr_core::obfsctr::Obfuscator;
 
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "sokomishalov")]
@@ -41,6 +44,10 @@ fn extract_file_paths(path: &Path) -> io::Result<Vec<File>> {
     }
 }
 
+fn replacer(raw: String) -> String {
+    String::from("kek")
+}
+
 fn main() {
     // let opts: Opts = Opts::parse();
 
@@ -52,8 +59,10 @@ fn main() {
 
     let files = extract_file_paths(Path::new(&opts.input)).unwrap();
 
-    for file in files {
-        println!("{:?}", file);
-        // todo
+    for mut file in files {
+        println!("Obfuscating {:?}", file);
+        let regexes = vec![Regex::new(r"(?:^|\W)and(?:$|\W)").unwrap()];
+
+        file.obfuscate_by_regexes(regexes, replacer)
     }
 }
