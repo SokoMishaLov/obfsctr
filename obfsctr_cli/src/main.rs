@@ -1,11 +1,7 @@
-use std::{
-    fs::metadata,
-    io,
-    io::{Error, ErrorKind},
-    path::Path,
-};
+use std::{fs, fs::metadata, io, io::{Error, ErrorKind}, path::Path};
 use std::borrow::Borrow;
 use std::ops::Deref;
+use std::path::PathBuf;
 
 use clap::Clap;
 use regex::Regex;
@@ -19,10 +15,6 @@ struct Opts {
     #[clap(short = "i", long = "input")]
     input: String,
 
-    /// Sets an output file or directory (current directory by default)
-    #[clap(short = "o", long = "output", default_value = ".")]
-    output: String,
-
     /// Sets a regex for
     #[clap(short = "r", long = "regex", default_value = "")]
     regex: String,
@@ -32,22 +24,21 @@ struct Opts {
     threads: u8,
 }
 
-fn extract_file_paths(input_path: &str) -> io::Result<Vec<&Path>> {
+fn extract_file_paths(input_path: &str) -> io::Result<Vec<PathBuf>> {
     let path = Path::new(input_path);
     let md = metadata(&path)?;
-    Ok(vec![path])
 
-    // if md.is_dir() {
-    //     let entries: Vec<&Path> = fs::read_dir(path)?
-    //         .map(|res| res.map(|e| e.path().as_path()).unwrap())
-    //         .collect::<Result<Vec<&Path>, io::Error>>()?;
-    //
-    //     Ok(entries)
-    // } else if md.is_file() {
-    //     Ok(vec![path])
-    // } else {
-    //     Err(Error::new(ErrorKind::NotFound, "File or directory does not exist!"))
-    // }
+    if md.is_dir() {
+        let mut entries: Vec<PathBuf> = fs::read_dir(path)?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<PathBuf>, io::Error>>()?;
+
+        Ok(entries)
+    } else if md.is_file() {
+        Ok(vec![path.to_path_buf()])
+    } else {
+        Err(Error::new(ErrorKind::NotFound, "File or directory does not exist!"))
+    }
 }
 
 fn replacer(raw: &str) -> &str {
@@ -58,9 +49,8 @@ fn main() {
     // let opts: Opts = Opts::parse();
 
     let opts = Opts {
-        input: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/hamlet.txt".to_string(),
-        output: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
-        regex: r"and".to_string(),
+        input: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
+        regex: r"and|workspace".to_string(),
         threads: 4,
     };
 
@@ -68,6 +58,6 @@ fn main() {
 
     for mut file_path in file_paths {
         let r = Regex::new(opts.regex.as_str()).unwrap();
-        file_path.obfuscate_by_regex(&r, replacer);
+        file_path.as_path().obfuscate_by_regex(&r, replacer);
     }
 }

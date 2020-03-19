@@ -1,17 +1,17 @@
 use std::{
     borrow::Borrow,
+    borrow::BorrowMut,
     convert::TryInto,
+    fmt::Debug,
     fs,
     fs::File,
+    fs::OpenOptions,
+    io::{BufReader, BufWriter},
     io::Read,
     io::Write,
     ops::Deref,
     path::Path,
 };
-use std::borrow::BorrowMut;
-use std::fmt::Debug;
-use std::fs::OpenOptions;
-use std::io::{BufReader, BufWriter};
 
 use regex::{
     self,
