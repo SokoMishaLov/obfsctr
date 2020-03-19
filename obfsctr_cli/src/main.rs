@@ -6,6 +6,7 @@ use std::{
     io::{Error, ErrorKind},
     path::Path,
 };
+use std::net::Shutdown::Read;
 
 use clap::Clap;
 use regex::{
@@ -13,7 +14,7 @@ use regex::{
     RegexSet,
 };
 
-use obfsctr_core::obfsctr::Obfuscator;
+use obfsctr_core::regex_obfsctr::Obfuscator;
 
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "sokomishalov")]
@@ -25,6 +26,10 @@ struct Opts {
     /// Sets an output file or directory (current directory by default)
     #[clap(short = "o", long = "output", default_value = ".")]
     output: String,
+
+    /// Sets a regex for
+    #[clap(short = "r", long = "regex", default_value = "")]
+    regex: String,
 
     /// Sets a number of worker threads (4 by default)
     #[clap(short = "n", long = "n-threads", default_value = "4")]
@@ -57,16 +62,17 @@ fn main() {
     let opts = Opts {
         input: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
         output: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
+        regex: r"(?:^|\W)and(?:$|\W)".to_string(),
         threads: 4,
     };
 
     let files = extract_file_paths(Path::new(&opts.input)).unwrap();
 
-    let regexes = RegexSet::new(&[r"(?:^|\W)and(?:$|\W)"]).unwrap();
-
     for mut file in files {
         println!("Obfuscating {:?}", file);
 
-        file.obfuscate_by_regexes(regexes, replacer)
+        let r = Regex::new(opts.regex.as_str()).unwrap();
+
+        file.obfuscate_by_regex(&r, replacer)
     }
 }
