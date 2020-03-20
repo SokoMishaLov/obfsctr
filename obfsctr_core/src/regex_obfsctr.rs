@@ -1,19 +1,12 @@
 use std::{
-    borrow::Borrow,
-    borrow::BorrowMut,
-    convert::TryInto,
-    fmt::Debug,
     fs,
-    fs::File,
-    fs::OpenOptions,
     io::{BufReader, BufWriter},
     io::Read,
     io::Write,
-    ops::Deref,
     path::Path,
 };
 
-use regex::{self, Captures, Regex, Replacer};
+use regex::{self, Captures, Regex};
 
 pub trait Obfuscator {
     fn obfuscate_by_regex(&self, regex: &Regex, replacer: fn(&str) -> String) -> Self;

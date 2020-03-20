@@ -1,6 +1,4 @@
 use std::{fs, fs::metadata, io, io::{Error, ErrorKind}, path::Path};
-use std::borrow::Borrow;
-use std::ops::Deref;
 use std::path::PathBuf;
 
 use clap::Clap;
@@ -29,7 +27,7 @@ fn extract_file_paths(input_path: &str) -> io::Result<Vec<PathBuf>> {
     let md = metadata(&path)?;
 
     if md.is_dir() {
-        let mut entries: Vec<PathBuf> = fs::read_dir(path)?
+        let entries: Vec<PathBuf> = fs::read_dir(path)?
             .map(|res| res.map(|e| e.path()))
             .collect::<Result<Vec<PathBuf>, io::Error>>()?;
 
@@ -56,7 +54,7 @@ fn main() {
 
     let file_paths = extract_file_paths(opts.input.as_str()).unwrap();
 
-    for mut path in file_paths {
+    for path in file_paths {
         let r = Regex::new(opts.regex.as_str()).unwrap();
         path.as_path().obfuscate_by_regex(&r, replacer);
     }
