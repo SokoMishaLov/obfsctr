@@ -1,10 +1,25 @@
-use std::{fs, fs::metadata, io, io::{Error, ErrorKind}, path::Path};
-use std::path::PathBuf;
+use std::{
+    fs,
+    fs::metadata,
+    io,
+    io::{Error, ErrorKind},
+    path::Path,
+    path::PathBuf,
+    str,
+    sync::mpsc::channel,
+    time::Instant,
+};
 
 use clap::Clap;
+use colored::*;
+use fasthash::murmur3;
 use regex::Regex;
+use threadpool::ThreadPool;
 
 use obfsctr_core::regex_obfsctr::Obfuscator;
+
+const SEED: u32 = 10071995;
+const MARKER: &str = "**";
 
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "sokomishalov")]
@@ -19,7 +34,7 @@ struct Opts {
 
     /// Sets a number of worker threads (4 by default)
     #[clap(short = "n", long = "n-threads", default_value = "4")]
-    threads: u8,
+    threads: usize,
 }
 
 fn extract_file_paths(input_path: &str) -> io::Result<Vec<PathBuf>> {
@@ -40,22 +55,32 @@ fn extract_file_paths(input_path: &str) -> io::Result<Vec<PathBuf>> {
 }
 
 fn replacer(raw: &str) -> String {
-    raw.to_uppercase()
+    let val = murmur3::hash128_with_seed(&raw, SEED);
+    transform_u128_to_array_of_str(val)
+}
+
+fn transform_u128_to_array_of_str(x: u128) -> String {
+    format!("{}{}{}", MARKER, x.to_string(), MARKER)
 }
 
 fn main() {
     let opts: Opts = Opts::parse();
 
-    // let opts = Opts {
-    //     input: "/Users/mihailsokolov/Desktop/SMA/IdeaProjects/obfsctr/examples/".to_string(),
-    //     regex: r"and".to_string(),
-    //     threads: 4,
-    // };
-
+    let thread_pool = ThreadPool::new(opts.threads);
     let file_paths = extract_file_paths(opts.input.as_str()).unwrap();
+    let re = Regex::new(opts.regex.as_str()).unwrap();
 
-    for path in file_paths {
-        let r = Regex::new(opts.regex.as_str()).unwrap();
-        path.as_path().obfuscate_by_regex(&r, replacer);
+    let (tx, rx) = channel();
+    for path in file_paths.clone() {
+        let tx = tx.clone();
+        let re = re.clone();
+        thread_pool.execute(move || {
+            path.as_path().obfuscate_by_regex(&re, replacer);
+            tx.send(1).expect("channel will be there waiting for the pool");
+        });
     }
+
+    let now = Instant::now();
+    rx.iter().take(file_paths.len()).all(|_| { true });
+    println!("{} {:?}", "Total time:".green(), now.elapsed());
 }
