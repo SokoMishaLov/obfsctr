@@ -16,7 +16,7 @@ use fasthash::murmur3;
 use regex::Regex;
 use threadpool::ThreadPool;
 
-use obfsctr_core::regex_obfsctr::Obfuscator;
+use obfsctr_core::regex_obfsctr::RegexObfuscator;
 
 const SEED: u32 = 10071995;
 const MARKER: &str = "**";
@@ -75,7 +75,7 @@ fn main() {
         let tx = tx.clone();
         let re = re.clone();
         thread_pool.execute(move || {
-            path.as_path().obfuscate_by_regex(&re, replacer);
+            path.as_path().obfuscate(&re, replacer);
             tx.send(1).expect("channel will be there waiting for the pool");
         });
     }
