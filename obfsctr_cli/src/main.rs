@@ -56,10 +56,10 @@ fn extract_file_paths(input_path: &str) -> io::Result<Vec<PathBuf>> {
 
 fn replacer(raw: &str) -> String {
     let val = murmur3::hash128_with_seed(&raw, SEED);
-    transform_u128_to_array_of_str(val)
+    transform_u128_array_to_str(val)
 }
 
-fn transform_u128_to_array_of_str(x: u128) -> String {
+fn transform_u128_array_to_str(x: u128) -> String {
     format!("{}{}{}", MARKER, x.to_string(), MARKER)
 }
 
@@ -82,5 +82,6 @@ fn main() {
 
     let now = Instant::now();
     rx.iter().take(file_paths.len()).all(|_| { true });
+
     println!("{} {:?}", "Total time:".green(), now.elapsed());
 }
