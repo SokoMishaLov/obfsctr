@@ -41,14 +41,7 @@ struct Opts {
 }
 
 pub fn main() {
-    // let opts: Opts = Opts::parse();
-
-    let opts: Opts = Opts {
-        input: "/Users/mikhael/Desktop/SMA/IdeaProjects/obfsctr/examples/in".to_string(),
-        output: "/Users/mikhael/Desktop/SMA/IdeaProjects/obfsctr/examples/out".to_string(),
-        regex: "and".to_string(),
-        threads: 4,
-    };
+    let opts: Opts = Opts::parse();
 
     let thread_pool: ThreadPool = ThreadPool::new(opts.threads);
     let file_paths: Vec<(PathBuf, PathBuf)> = extract_file_paths_recursively(&opts.input, &opts.output);
