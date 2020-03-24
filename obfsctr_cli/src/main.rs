@@ -1,8 +1,5 @@
 use std::{
     fs,
-    fs::metadata,
-    io,
-    io::{Error, ErrorKind},
     path::Path,
     path::PathBuf,
     str,
@@ -13,8 +10,9 @@ use std::{
 use clap::Clap;
 use colored::*;
 use fasthash::murmur3;
-use regex::Regex;
+use regex::RegexSet;
 use threadpool::ThreadPool;
+use walkdir::WalkDir;
 
 use obfsctr_core::regex_obfsctr::RegexObfuscator;
 
@@ -28,8 +26,13 @@ struct Opts {
     #[clap(short = "i", long = "input")]
     input: String,
 
-    /// Sets a regex for
-    #[clap(short = "r", long = "regex", default_value = "")]
+    /// Sets an output directory
+    /// If not specified, tool will overwrite files from input directory/file
+    #[clap(short = "o", long = "output")]
+    output: String,
+
+    /// Sets a regex for places to obfuscate
+    #[clap(short = "r", long = "regex")]
     regex: String,
 
     /// Sets a number of worker threads (4 by default)
@@ -37,46 +40,29 @@ struct Opts {
     threads: usize,
 }
 
-fn extract_file_paths(input_path: &str) -> io::Result<Vec<PathBuf>> {
-    let path = Path::new(input_path);
-    let md = metadata(&path)?;
+pub fn main() {
+    // let opts: Opts = Opts::parse();
 
-    if md.is_dir() {
-        let entries: Vec<PathBuf> = fs::read_dir(path)?
-            .map(|res| res.map(|e| e.path()))
-            .collect::<Result<Vec<PathBuf>, io::Error>>()?;
+    let opts: Opts = Opts {
+        input: "/Users/mikhael/Desktop/SMA/IdeaProjects/obfsctr/examples/in".to_string(),
+        output: "/Users/mikhael/Desktop/SMA/IdeaProjects/obfsctr/examples/out".to_string(),
+        regex: "and".to_string(),
+        threads: 4,
+    };
 
-        Ok(entries)
-    } else if md.is_file() {
-        Ok(vec![path.to_path_buf()])
-    } else {
-        Err(Error::new(ErrorKind::NotFound, "File or directory does not exist!"))
-    }
-}
-
-fn replacer(raw: &str) -> String {
-    let val = murmur3::hash128_with_seed(&raw, SEED);
-    transform_u128_array_to_str(val)
-}
-
-fn transform_u128_array_to_str(x: u128) -> String {
-    format!("{}{}{}", MARKER, x.to_string(), MARKER)
-}
-
-fn main() {
-    let opts: Opts = Opts::parse();
-
-    let thread_pool = ThreadPool::new(opts.threads);
-    let file_paths = extract_file_paths(opts.input.as_str()).unwrap();
-    let re = Regex::new(opts.regex.as_str()).unwrap();
+    let thread_pool: ThreadPool = ThreadPool::new(opts.threads);
+    let file_paths: Vec<(PathBuf, PathBuf)> = extract_file_paths_recursively(&opts.input, &opts.output);
+    let re_set: RegexSet = RegexSet::new(&[opts.regex.as_str()]).expect("Invalid regular expression");
 
     let (tx, rx) = channel();
-    for path in file_paths.clone() {
+    for (input_file_path, output_file_path) in file_paths.clone() {
         let tx = tx.clone();
-        let re = re.clone();
+        let re_set = re_set.clone();
         thread_pool.execute(move || {
-            path.as_path().obfuscate(&re, replacer);
-            tx.send(1).expect("channel will be there waiting for the pool");
+            input_file_path.obfuscate(&mut output_file_path.clone(), &re_set, replacer);
+            tx
+                .send(1)
+                .expect("channel will be there waiting for the pool");
         });
     }
 
@@ -84,4 +70,42 @@ fn main() {
     rx.iter().take(file_paths.len()).all(|_| { true });
 
     println!("{} {:?}", "Total time:".green(), now.elapsed());
+}
+
+fn extract_file_paths_recursively(input: &String, output: &String) -> Vec<(PathBuf, PathBuf)> {
+    WalkDir::new(input)
+        .into_iter()
+        .filter_map(|v| v.ok())
+        .filter(|de| {
+            let is_file = de
+                .metadata()
+                .map_or(false, |md| md.is_file());
+
+            let is_not_hidden = de
+                .file_name()
+                .to_str()
+                .map_or(false, |s| !s.starts_with("."));
+
+            is_file && is_not_hidden
+        })
+        .map(|de| {
+            let de_relative_path = de
+                .path()
+                .to_str()
+                .unwrap()
+                .trim_start_matches(input)
+                .trim_start_matches("/");
+
+            let result_path_str = format!("{}/{}", output.trim_end_matches("/"), de_relative_path);
+            let result_path = Path::new(&result_path_str);
+
+            fs::create_dir_all(result_path.parent().unwrap()).unwrap();
+
+            (de.path().to_path_buf(), result_path.to_path_buf())
+        })
+        .collect::<Vec<(PathBuf, PathBuf)>>()
+}
+
+fn replacer(raw: &str) -> String {
+    format!("{}{}{}", MARKER, murmur3::hash128_with_seed(&raw, SEED), MARKER)
 }
