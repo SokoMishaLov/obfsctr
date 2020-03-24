@@ -22,19 +22,19 @@ const MARKER: &str = "**";
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "sokomishalov")]
 struct Opts {
-    /// Sets an input file or directory
+    /// Input file or directory
     #[clap(short = "i", long = "input")]
     input: String,
 
-    /// Sets an output directory.
+    /// Output directory
     #[clap(short = "o", long = "output")]
     output: String,
 
-    /// Sets a regex for places to obfuscate
+    /// Regular expression for the places to obfuscate
     #[clap(short = "r", long = "regex")]
     regex: String,
 
-    /// Sets a number of worker threads
+    /// Number of worker threads
     #[clap(short = "n", long = "n-threads", default_value = "4")]
     threads: usize,
 }
