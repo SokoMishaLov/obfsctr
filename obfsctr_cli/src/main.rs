@@ -56,14 +56,26 @@ pub fn main() {
         let tx = tx.clone();
         let re_set = re_set.clone();
         thread_pool.execute(move || {
+            let now = Instant::now();
             input_file_path.obfuscate(&mut output_file_path.clone(), &re_set, replacer);
-            tx.send(1).expect("channel will be there waiting for the pool");
+
+            tx.send((input_file_path, now.elapsed())).expect("channel will be there waiting for the pool");
         });
     }
 
     let now = Instant::now();
-    rx.iter().take(file_paths.len()).all(|_| { true });
-    println!("{} {:?}", "Total obfuscation time:".green(), now.elapsed());
+    rx.iter().take(file_paths.len()).all(|(p, d)| {
+        let input_file_relative_path = p
+            .as_os_str()
+            .to_str()
+            .unwrap()
+            .trim_start_matches(&opts.input)
+            .trim_start_matches("/");
+
+        println!("{} obfuscated in {:?}", input_file_relative_path.cyan(), d);
+        true
+    });
+    println!("{}{:?}", "Total obfuscation time: ".bright_green(), now.elapsed());
 }
 
 fn extract_file_paths_recursively(input: &String, output: &String) -> Vec<(PathBuf, PathBuf)> {
