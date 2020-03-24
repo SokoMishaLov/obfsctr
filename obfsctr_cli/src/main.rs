@@ -26,8 +26,7 @@ struct Opts {
     #[clap(short = "i", long = "input")]
     input: String,
 
-    /// Sets an output directory
-    /// If not specified, tool will overwrite files from input directory/file
+    /// Sets an output directory.
     #[clap(short = "o", long = "output")]
     output: String,
 
@@ -35,7 +34,7 @@ struct Opts {
     #[clap(short = "r", long = "regex")]
     regex: String,
 
-    /// Sets a number of worker threads (4 by default)
+    /// Sets a number of worker threads
     #[clap(short = "n", long = "n-threads", default_value = "4")]
     threads: usize,
 }
@@ -43,9 +42,14 @@ struct Opts {
 pub fn main() {
     let opts: Opts = Opts::parse();
 
-    let thread_pool: ThreadPool = ThreadPool::new(opts.threads);
-    let file_paths: Vec<(PathBuf, PathBuf)> = extract_file_paths_recursively(&opts.input, &opts.output);
+    let out = if opts.output.trim().is_empty() {
+        &opts.input
+    } else {
+        &opts.output
+    };
+    let file_paths: Vec<(PathBuf, PathBuf)> = extract_file_paths_recursively(&opts.input, out);
     let re_set: RegexSet = RegexSet::new(&[opts.regex.as_str()]).expect("Invalid regular expression");
+    let thread_pool: ThreadPool = ThreadPool::new(opts.threads);
 
     let (tx, rx) = channel();
     for (input_file_path, output_file_path) in file_paths.clone() {
@@ -53,16 +57,13 @@ pub fn main() {
         let re_set = re_set.clone();
         thread_pool.execute(move || {
             input_file_path.obfuscate(&mut output_file_path.clone(), &re_set, replacer);
-            tx
-                .send(1)
-                .expect("channel will be there waiting for the pool");
+            tx.send(1).expect("channel will be there waiting for the pool");
         });
     }
 
     let now = Instant::now();
     rx.iter().take(file_paths.len()).all(|_| { true });
-
-    println!("{} {:?}", "Total time:".green(), now.elapsed());
+    println!("{} {:?}", "Total obfuscation time:".green(), now.elapsed());
 }
 
 fn extract_file_paths_recursively(input: &String, output: &String) -> Vec<(PathBuf, PathBuf)> {
