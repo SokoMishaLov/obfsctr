@@ -6,11 +6,12 @@ use std::{
     sync::mpsc::channel,
     time::Instant,
 };
+use std::str::FromStr;
 
 use clap::Clap;
 use colored::*;
 use fasthash::murmur3;
-use regex::RegexSet;
+use regex::Regex;
 use threadpool::ThreadPool;
 use walkdir::WalkDir;
 
@@ -47,17 +48,18 @@ pub fn main() {
     } else {
         &opts.output
     };
+
     let file_paths: Vec<(PathBuf, PathBuf)> = extract_file_paths_recursively(&opts.input, out);
-    let re_set: RegexSet = RegexSet::new(&[opts.regex.as_str()]).expect("Invalid regular expression");
+    let re: Regex = Regex::from_str(&opts.regex).expect("Invalid regular expression");
     let thread_pool: ThreadPool = ThreadPool::new(opts.threads);
 
     let (tx, rx) = channel();
     for (input_file_path, output_file_path) in file_paths.clone() {
         let tx = tx.clone();
-        let re_set = re_set.clone();
+        let re = re.clone();
         thread_pool.execute(move || {
             let now = Instant::now();
-            input_file_path.obfuscate(&mut output_file_path.clone(), &re_set, replacer);
+            input_file_path.obfuscate(&mut output_file_path.clone(), &re, replacer);
 
             tx.send((input_file_path, now.elapsed())).expect("channel will be there waiting for the pool");
         });
