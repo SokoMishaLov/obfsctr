@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 clap = "3.0.0-beta.2"
-regex = "1.4.2"
+regex = "1.5.4"
 threadpool = "1.8.1"
 fasthash = "0.4.0"
 colored = "2.0.0"
